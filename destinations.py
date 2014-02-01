@@ -6,10 +6,15 @@ def tripDistance(brain, start, dest):
     return len(simpleAStar.calculatePath(brain.gameMap, start, dest))
 
 
-def totalTripDistance(brain, limo, passenger, needsCoffee=False):
+def totalTripDistance(brain, player, passenger, needsCoffee=False):
     """ Calculate total distance from car->pickup->destination """
 
-    # if the passenger is already in a limo or done w/ route, fuggedaboutit<<<<<<< HEAD
+    limo = player.limo
+
+    if passenger in brain.carried[player.guid]:
+        return (float('inf'), None)
+
+    # if the passenger is already in a limo or done w/ route, fuggedaboutit
     if passenger.destination is None:
         return (float('inf'), None)
  
@@ -46,14 +51,14 @@ def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     return (totalDistance, bestCoffeeShop) # Placeholder
 
 def getBestEnemyTarget(brain, enemy):
-    enemyTripDistances = [totalTripDistance(brain, enemy.limo, passenger) for passenger in brain.passengers]
+    enemyTripDistances = [totalTripDistance(brain, enemy, passenger) for passenger in brain.passengers]
     bestTarget = min(enemyTripDistances)[0] # get total distance, ignore coffeeshop (should be None)
-    pickupDistance = totalTripDistance(brain, enemy.limo, passenger)[0]
+    pickupDistance = totalTripDistance(brain, enemy, passenger)[0]
     return (bestTarget, pickupDistance)
 
 def rankPassengers(brain, needsCoffee=False):
     openPassengers = [passenger for passenger in brain.passengers if passenger.car is None and passenger.lobby is not None]
-    tripDistances = [totalTripDistance(brain, brain.me.limo, passenger, needsCoffee) for passenger in openPassengers]
+    tripDistances = [totalTripDistance(brain, brain.me, passenger, needsCoffee) for passenger in openPassengers]
     pointsDelivered = [passenger.pointsDelivered for passenger in openPassengers]
     ordered = sorted(zip(pointsDelivered, tripDistances, openPassengers), key=lambda x: (-x[0], x[1]))
     unzipped = zip(*ordered)
