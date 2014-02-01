@@ -10,8 +10,20 @@ def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     """ Calculate total distance from car->pickup->destination """
 
     # if the passenger is already in a limo, fuggedaboutit
-    if passenger.car is not None:
-        return None
+    # if passenger.limo is not None:
+        # passengerDistToLobby = 
+
+    # If the passenger is finished their tour, return infinity
+    if passenger.destination == None:
+        return float('inf')
+
+    if passenger.limo == None: # passenger is free
+        intermediateDestination = passenger.lobby
+        finalDestination = passenger.destination
+    else:
+        intermediateDestination = passenger.destination
+        finalDestination = passenger.route[0]
+
 
     bestCoffeeShop = None
 
@@ -19,14 +31,17 @@ def totalTripDistance(brain, limo, passenger, needsCoffee=False):
         firstLeg = float('inf')
         for coffeeShop in brain.stores: # fix this
             distance = tripDistance(brain, limo.tilePosition, coffeeShop.busStop) +  \
-                        tripDistance(brain, coffeeShop.busStop, passenger.lobby)
+                        tripDistance(brain, coffeeShop.busStop, intermediateDestination.busStop)
             if distance < firstLeg:
                 firstLeg = distance
                 bestCoffeeShop = coffeeShop
     else:
-        firstLeg = tripDistance(brain, limo.tilePosition, passenger.lobby.busStop)
+        firstLeg = tripDistance(brain, limo.tilePosition, intermediateDestination.busStop)
 
-    secondLeg = tripDistance(brain, passenger.lobby.busStop, passenger.destination.busStop)
+    if passenger.limo != None:
+        firstLeg = max(firstLeg, tripDistance(brain, passenger.limo.tilePosition, intermediateDestination.busStop))
+
+    secondLeg = tripDistance(brain, intermediateDestination.busStop, finalDestination.busStop)
 
     totalDistance = firstLeg + secondLeg
 
