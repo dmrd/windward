@@ -63,7 +63,7 @@ def getOurBestPassenger(brain, needsCoffee=False):
 
 def planCoffee(brain):
     """ Plan when to get coffee """
-    return rand.choice(self.stores).busStop
+    return rand.choice(brain.stores).busStop
 
     
 def allPickups(brain):
@@ -95,17 +95,17 @@ def getBestStrategy(brain):
         return planCoffee(brain)
         
     pickup = allPickups(brain)
-    self.pickup = pickup
+    brain.pickup = pickup
     return pickup[0].lobby.busStop
 
 
 def handleCurrentPassenger(brain):
     """ Bring current passenger to their destination (or decide to abandon)"""
-    assert(self.me.limo.passenger is not None)
+    assert(brain.me.limo.passenger is not None)
     return brain.me.limo.passenger.destination.busStop
 
 def handleRefusedEnemy(brain):
     """ Handle case when passenger refuses to disembark """
-    return rand.choice(filter(lambda c: c != self.me.limo.passenger.destination,
-        self.companies)).busStop
+    return rand.choice(filter(lambda c: c != brain.me.limo.passenger.destination,
+        brain.companies)).busStop
     # Want to modify to drop off at closest location (or block opponent)
