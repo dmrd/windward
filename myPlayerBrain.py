@@ -13,7 +13,7 @@ import simpleAStar
 from framework import sendOrders, playerPowerSend
 import destinations as dest
 
-NAME = "Bandersnatch2"
+NAME = "Bandersnatch"
 SCHOOL = "Princeton"
 
 class MyPlayerBrain(object):
@@ -65,11 +65,12 @@ class MyPlayerBrain(object):
 
         self.status = dict() # Set of status flags
 
+        self.carrying = { player.guid : None for player in self.players }
+        self.carried = { player.guid : set() for player in self.players }
+        
         # self.pickup = pickup = dest.allPickups(me, passengers)
         target = dest.getBestStrategy(self)
 
-        self.carrying = { player.guid : None for player in self.players }
-        self.carried = { player.guid : set() for player in self.players }
 
         # get the path from where we are to the dest.
 
@@ -112,15 +113,17 @@ class MyPlayerBrain(object):
                 self.carrying[playerStatus.guid] = playerStatus.limo.passenger
 
             if playerStatus != self.me:
-                print("Ignoring player status...")
+                # print("Ignoring player status...")
                 return
 
             ptDest = None
             pickup = []
             
             if status == "UPDATE":
+                print(self.me.limo.passenger)
+                print(self.me.limo.path)
                 print("UPDATE TICK")
-                self.maybePlayPowerUp()
+                # self.maybePlayPowerUp()
                 return
 
             self.displayStatus(status, playerStatus)

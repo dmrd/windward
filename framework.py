@@ -16,7 +16,7 @@ import api.units, api.map
 from debug import trap, printrap
 
 #local machine
-DEFAULT_ADDRESS = "10.9.79.168"
+DEFAULT_ADDRESS = "10.9.244.178"
 
 cardLastPlayed = None
 cardLastSendTime = datetime.datetime.now()
