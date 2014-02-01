@@ -83,7 +83,6 @@ class MyPlayerBrain(object):
         passengers -- The status of all passengers.
 
         """
-
         # bugbug - Framework.cs updates the object's in this object's Players,
         # Passengers, and Companies lists. This works fine as long as this app
         # is single threaded. However, if you create worker thread(s) or
@@ -98,12 +97,14 @@ class MyPlayerBrain(object):
             # the Player you are updating (particularly to determine what tile
             # to start your path from).
             if playerStatus != self.me:
+                print("Ignoring player status...")
                 return
 
             ptDest = None
             pickup = []
-
+            
             if status == "UPDATE":
+                print("UPDATE TICK")
                 self.maybePlayPowerUp()
                 return
 

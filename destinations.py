@@ -3,32 +3,43 @@ import simpleAStar
 
 def tripDistance(brain, start, dest):
     """ Return shortest path distance between start and dest """
-    print(start)
-    print(dest)
     return len(simpleAStar.calculatePath(brain.gameMap, start, dest))
 
 
 def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     """ Calculate total distance from car->pickup->destination """
 
-    # if the passenger is already in a limo or done w/ route, fuggedaboutit
-    if passenger.car is not None or passenger.lobby is None:
-        return (None, None)
+    # if the passenger is already in a limo or done w/ route, fuggedaboutit<<<<<<< HEAD
+    if passenger.destination is None:
+        return (float('inf'), None)
  
+    if passenger.car is None: # passenger is free
+        intermediateDestination = passenger.lobby
+        finalDestination = passenger.destination
+    else:
+        intermediateDestination = passenger.destination
+        if len(passenger.route) == 0:
+            return (float('inf'), None)
+        finalDestination = passenger.route[0]
+
+
     bestCoffeeShop = None
 
     if needsCoffee:
         firstLeg = float('inf')
         for coffeeShop in brain.stores: # fix this
             distance = tripDistance(brain, limo.tilePosition, coffeeShop.busStop) +  \
-                        tripDistance(brain, coffeeShop.busStop, passenger.lobby)
+                        tripDistance(brain, coffeeShop.busStop, intermediateDestination.busStop)
             if distance < firstLeg:
                 firstLeg = distance
                 bestCoffeeShop = coffeeShop
     else:
-        firstLeg = tripDistance(brain, limo.tilePosition, passenger.lobby.busStop)
+        firstLeg = tripDistance(brain, limo.tilePosition, intermediateDestination.busStop)
 
-    secondLeg = tripDistance(brain, passenger.lobby.busStop, passenger.destination.busStop)
+    if passenger.car is not None:
+        firstLeg = max(firstLeg, tripDistance(brain, passenger.limo.tilePosition, intermediateDestination.busStop))
+
+    secondLeg = tripDistance(brain, intermediateDestination.busStop, finalDestination.busStop)
 
     totalDistance = firstLeg + secondLeg
 
@@ -90,6 +101,7 @@ def getBestStrategy(brain):
     # Get best strategy for each enemy (and that passenger)
     # Consider enemy distance to passengers when deciding which to pick ups
     if brain.me.limo.passenger is not None:
+        print("HAVE A PASSENGER")
         return handleCurrentPassenger(brain)
     elif brain.me.limo.coffeeServings <= 0:
         # Go get coffee
