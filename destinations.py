@@ -3,16 +3,18 @@ import simpleAStar
 
 def tripDistance(brain, start, dest):
     """ Return shortest path distance between start and dest """
+    print(start)
+    print(dest)
     return len(simpleAStar.calculatePath(brain.gameMap, start, dest))
 
 
 def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     """ Calculate total distance from car->pickup->destination """
 
-    # if the passenger is already in a limo, fuggedaboutit
-    if passenger.car is not None:
-        return None
-
+    # if the passenger is already in a limo or done w/ route, fuggedaboutit
+    if passenger.car is not None or passenger.lobby is None:
+        return (None, None)
+ 
     bestCoffeeShop = None
 
     if needsCoffee:
@@ -32,34 +34,37 @@ def totalTripDistance(brain, limo, passenger, needsCoffee=False):
 
     return (totalDistance, bestCoffeeShop) # Placeholder
 
-def getBestEnemyTarget(brain, enemyLimo):
-    enemyTripDistances = [totalTripDistance(brain, enemyLimo, passenger) for passenger in brain.passengers]
+def getBestEnemyTarget(brain, enemy):
+    enemyTripDistances = [totalTripDistance(brain, enemy.limo, passenger) for passenger in brain.passengers]
     bestTarget = min(enemyTripDistances)[0] # get total distance, ignore coffeeshop (should be None)
-    pickupDistance = totalTripDistance(brain, enemyLimo.tilePosition, passenger.lobby)[0]
+    pickupDistance = totalTripDistance(brain, enemy.limo, passenger)[0]
     return (bestTarget, pickupDistance)
 
 def rankPassengers(brain, needsCoffee=False):
-    openPassengers = [passenger for passenger in brain.passengers if passenger.car is None]
+    openPassengers = [passenger for passenger in brain.passengers if passenger.car is None and passenger.lobby is not None]
     tripDistances = [totalTripDistance(brain, brain.me.limo, passenger, needsCoffee) for passenger in openPassengers]
     pointsDelivered = [passenger.pointsDelivered for passenger in openPassengers]
     ordered = sorted(zip(pointsDelivered, tripDistances, openPassengers), key=lambda x: (-x[0], x[1]))
     unzipped = zip(*ordered)
-    return (unzipped[2], zip(*unzipped[1])[1]) # Get passengers, bestCoffeeShops tuple
+    return zip(unzipped[2], zip(*unzipped[1])[1]) # Get passengers, bestCoffeeShops tuple
 
 def getOurBestPassenger(brain, needsCoffee=False):
     orderedPassengers = rankPassengers(brain, needsCoffee)
-    enemyPassengers = [getBestEnemyTarget(brain, enemy) for enemy in brain.players if enemy != brain.me]
-    pDistance = dict(enemyPassengers)
-    candidates = []
-    taken = []
-    for passenger, coffeeshop in orderedPassengers:
-        if passenger in pDistance:
-            pickupDist = tripDistance(brain, brain.me.limo.tilePosition, passenger.lobby)
-            if pickupDist < pDistance[passenger]:
-                candidates.append((passenger, pDistance[passenger] - pickupDist, coffeeshop))
-            else:
-                taken.append((passenger, pDistance[passenger] - pickupDist, coffeeshop))
-    return (candidates + taken)[0]
+    p = orderedPassengers[0]
+    return (p[0], 10, p[1])
+    # enemyPassengers = [getBestEnemyTarget(brain, enemy) for enemy in brain.players if enemy != brain.me]
+    # pDistance = dict(enemyPassengers)
+    # candidates = []
+    # taken = []
+    # print(orderedPassengers)
+    # for passenger, coffeeshop in orderedPassengers:
+    #     if passenger in pDistance:
+    #         pickupDist = tripDistance(brain, brain.me.limo.tilePosition, passenger.lobby)
+    #         if pickupDist < pDistance[passenger]:
+    #             candidates.append((passenger, pDistance[passenger] - pickupDist, coffeeshop))
+    #         else:
+    #             taken.append((passenger, pDistance[passenger] - pickupDist, coffeeshop))
+    # return (candidates + taken)[0]
 
 def planCoffee(brain):
     """ Plan when to get coffee """
@@ -80,6 +85,7 @@ def allPickups(brain):
 
 def getBestStrategy(brain):
     """ returns Sort passengers by trip distance """
+    print("TICK")
     # Rank passengers
     # Get best strategy for each enemy (and that passenger)
     # Consider enemy distance to passengers when deciding which to pick ups
@@ -91,7 +97,8 @@ def getBestStrategy(brain):
         return coffeeshop.busStop
     else:
         passenger, advantage, _ = getOurBestPassenger(brain, needsCoffee=False)
-        self.pickup = passenger
+        print(passenger)
+        brain.pickup = [passenger]
         return passenger.lobby.busStop
 
 def handleCurrentPassenger(brain):
