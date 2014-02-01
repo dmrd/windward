@@ -68,6 +68,9 @@ class MyPlayerBrain(object):
         # self.pickup = pickup = dest.allPickups(me, passengers)
         target = dest.getBestStrategy(self)
 
+        self.carrying = { player.guid : None for player in players }
+        self.carried = { player.guid : set() for player in players }
+
         # get the path from where we are to the dest.
 
         path = self.calculatePathPlus1(me, target)
@@ -97,6 +100,18 @@ class MyPlayerBrain(object):
             # remove this. But make sure you use self.me, not playerStatus for
             # the Player you are updating (particularly to determine what tile
             # to start your path from).
+
+            if status == "PASSENGER_PICKED_UP":
+                self.carrying[playerStatus.guid] = playerStatus.limo.passenger
+            if status == "PASSENGER_ABANDONED":
+                self.carrying[playerStatus.guid] = None
+            if status == "PASSENGER_DELIVERED":
+                self.carried[playerStatus.guid].add(self.carrying[playerStatus.guid])
+                self.carrying[playerStatus.guid] = None
+            if status == "PASSENGER_DELIVERED_AND_PICKED_UP":
+                self.carried[playerStatus.guid].add(self.carrying[playerStatus.guid])
+                self.carrying[playerStatus.guid] = playerStatus.limo.passenger
+
             if playerStatus != self.me:
                 return
 

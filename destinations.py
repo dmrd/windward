@@ -17,7 +17,7 @@ def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     if passenger.destination == None:
         return float('inf')
 
-    if passenger.limo == None: # passenger is free
+    if passenger.car == None: # passenger is free
         intermediateDestination = passenger.lobby
         finalDestination = passenger.destination
     else:
@@ -38,8 +38,8 @@ def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     else:
         firstLeg = tripDistance(brain, limo.tilePosition, intermediateDestination.busStop)
 
-    if passenger.limo != None:
-        firstLeg = max(firstLeg, tripDistance(brain, passenger.limo.tilePosition, intermediateDestination.busStop))
+    if passenger.car != None:
+        firstLeg = max(firstLeg, tripDistance(brain, passenger.car.tilePosition, intermediateDestination.busStop))
 
     secondLeg = tripDistance(brain, intermediateDestination.busStop, finalDestination.busStop)
 
