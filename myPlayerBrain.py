@@ -120,9 +120,10 @@ class MyPlayerBrain(object):
             pickup = []
             
             if status == "UPDATE":
-                print(self.me.limo.passenger)
-                print(self.me.limo.path)
-                print("UPDATE TICK")
+                print(self.pickup)
+                # print("Current passenger: {}".format(self.me.limo.passenger))
+                # print(self.me.limo.path)
+                # print("UPDATE TICK")
                 # self.maybePlayPowerUp()
                 return
 
@@ -132,6 +133,8 @@ class MyPlayerBrain(object):
             if (status == "PASSENGER_NO_ACTION" or status == "NO_PATH"):
                 if self.me.limo.passenger is None:
                     ptDest = dest.getBestStrategy(self)
+                else:
+                    print("WHY NO PATH")    
             elif (status == "PASSENGER_DELIVERED" or
                   status == "PASSENGER_ABANDONED"):
                 ptDest = dest.getBestStrategy(self)
@@ -157,7 +160,7 @@ class MyPlayerBrain(object):
 
             # get the path from where we are to the dest.
             path = self.calculatePathPlus1(self.me, ptDest)
-
+            print("Pickup: {}".format(self.pickup))
             sendOrders(self, "move", path, self.pickup)
         except Exception as e:
             print traceback.format_exc()
