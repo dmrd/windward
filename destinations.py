@@ -111,6 +111,7 @@ def handleCurrentPassenger(brain):
 
 def handleRefusedEnemy(brain):
     """ Handle case when passenger refuses to disembark """
-    return rand.choice(filter(lambda c: c != brain.me.limo.passenger.destination,
-        brain.companies)).busStop
+    companies = filter(lambda c: c != brain.me.limo.passenger.destination, brain.companies)
+    distances = [tripDistance(brain, brain.me.limo.tilePosition, company.busStop)]
+    return companies[ distances.index(min(distances)) ].busStop
     # Want to modify to drop off at closest location (or block opponent)
