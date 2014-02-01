@@ -3,14 +3,14 @@ import simpleAStar
 
 def tripDistance(brain, start, dest):
     """ Return shortest path distance between start and dest """
-    return len(simpleAStarcalculatePath(brain.gameMap, start, dest))
+    return len(simpleAStar.calculatePath(brain.gameMap, start, dest))
 
 
 def totalTripDistance(brain, limo, passenger, needsCoffee=False):
     """ Calculate total distance from car->pickup->destination """
 
     # if the passenger is already in a limo, fuggedaboutit
-    if passenger.car != None:
+    if passenger.limo != None:
         return None
 
     bestCoffeeShop = None
