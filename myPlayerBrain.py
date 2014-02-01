@@ -1,7 +1,7 @@
 """
  * ----------------------------------------------------------------------------
- * "THE BEER-WARE LICENSE" 
- * As long as you retain this notice you can do whatever you want with this 
+ * "THE BEER-WARE LICENSE"
+ * As long as you retain this notice you can do whatever you want with this
  * stuff. If you meet an employee from Windward some day, and you think this
  * stuff is worth it, you can buy them a beer in return. Windward Studios
  * ----------------------------------------------------------------------------
@@ -11,15 +11,16 @@ import random as rand
 import traceback
 import simpleAStar
 from framework import sendOrders, playerPowerSend
+import destinations as dest
 
-NAME = "Guido van Rossum"
-SCHOOL = "Windward U."
+NAME = "Bandersnatch2"
+SCHOOL = "Princeton"
 
 class MyPlayerBrain(object):
     """The Python AI class.  This class must have the methods setup and gameStatus."""
     def __init__(self, name=NAME):
         self.name = name #The name of the player.
-        
+
         #The player's avatar (looks in the same directory that this module is in).
         #Must be a 32 x 32 PNG file.
         try:
@@ -31,7 +32,7 @@ class MyPlayerBrain(object):
         except IOError:
             avatar = None # avatar is optional
         self.avatar = avatar
-    
+
     def setup(self, gMap, me, allPlayers, companies, passengers, client, stores, powerUpDeck, framework):
         """
         Called at the start of the game; initializes instance variables.
@@ -47,7 +48,7 @@ class MyPlayerBrain(object):
         powerUpHand -- The powerups this player can draw.
         myPassenger -- The passenger currently in my limo, none to start.
         MAX_TRIPS_BEFORE_REFILL -- The maximum number of trips allowed before a refill is required.
-        
+
         """
         self.framework = framework
         self.gameMap = gMap
@@ -62,12 +63,15 @@ class MyPlayerBrain(object):
         self.myPassenger = None
         self.MAX_TRIPS_BEFORE_REFILL = 3
 
-        self.pickup = pickup = self.allPickups(me, passengers)
+        self.status = dict() # Set of status flags
+
+        # self.pickup = pickup = dest.allPickups(me, passengers)
+        target = dest.getBestStrategy(self, passengers)
 
         # get the path from where we are to the dest.
 
-        path = self.calculatePathPlus1(me, pickup[0].lobby.busStop)
-        sendOrders(self, "ready", path, pickup)
+        path = self.calculatePathPlus1(me, target)
+        sendOrders(self, "ready", path, self.pickup)
 
     def gameStatus(self, status, playerStatus):
         """
@@ -98,52 +102,44 @@ class MyPlayerBrain(object):
 
             ptDest = None
             pickup = []
-            
+
             if status == "UPDATE":
                 self.maybePlayPowerUp()
                 return
-            
+
             self.displayStatus(status, playerStatus)
-            
-            
+
+
             if (status == "PASSENGER_NO_ACTION" or status == "NO_PATH"):
                 if self.me.limo.passenger is None:
-                    pickup = self.allPickups(self.me, self.passengers)
-                    ptDest = pickup[0].lobby.busStop
-                else:
-                    ptDest = self.me.limo.passenger.destination.busStop
+                    ptDest = dest.getBestStrategy(self)
             elif (status == "PASSENGER_DELIVERED" or
                   status == "PASSENGER_ABANDONED"):
-                pickup = self.allPickups(self.me, self.passengers)
-                ptDest = pickup[0].lobby.busStop
+                ptDest = dest.getBestStrategy(self)
             elif  status == "PASSENGER_REFUSED_ENEMY":
-                ptDest = rand.choice(filter(lambda c: c != self.me.limo.passenger.destination,
-                    self.companies)).busStop
+                ptDest = dest.handleRefusedEnemy(self)
             elif (status == "PASSENGER_DELIVERED_AND_PICKED_UP" or
                   status == "PASSENGER_PICKED_UP"):
-                pickup = self.allPickups(self.me, self.passengers)
-                ptDest = self.me.limo.passenger.destination.busStop
-                
-            # coffee store override
-            if(status == "PASSENGER_DELIVERED_AND_PICKED_UP" or status == "PASSENGER_DELIVERED" or status == "PASSENGER_ABANDONED"):
-                if(self.me.limo.coffeeServings <= 0):
-                    ptDest = rand.choice(self.stores).busStop
-            elif(status == "PASSENGER_REFUSED_NO_COFFEE" or status == "PASSENGER_DELIVERED_AND_PICK_UP_REFUSED"):
-                ptDest = rand.choice(self.stores).busStop
+                ptDest = dest.getBestStrategy(self)
+                # ptDest = handleCurrentPassenger(self)
+            elif(status == "PASSENGER_REFUSED_NO_COFFEE" or
+                 status == "PASSENGER_DELIVERED_AND_PICK_UP_REFUSED"):
+                # coffee store override
+                print("Passenger refused coffee!")
+                ptDest = planCoffee(self)
             elif(status == "COFFEE_STORE_CAR_RESTOCKED"):
-                pickup = self.allPickups(self.me, self.passengers)
-                if len(pickup) != 0:
-                    ptDest = pickup[0].lobby.busStop
-            
+                ptDest = dest.getBestStrategy(self)
+
             if(ptDest == None):
+                print("No path set!")
                 return
-            
+
             self.displayOrders(ptDest)
-            
+
             # get the path from where we are to the dest.
             path = self.calculatePathPlus1(self.me, ptDest)
 
-            sendOrders(self, "move", path, pickup)
+            sendOrders(self, "move", path, self.pickup)
         except Exception as e:
             print traceback.format_exc()
             raise e
@@ -180,7 +176,7 @@ class MyPlayerBrain(object):
         if len(path) > 1:
             path.append(path[-2])
         return path
-    
+
     def maybePlayPowerUp(self):
         if len(self.powerUpHand) is not 0 and rand.randint(0, 50) < 30:
             return
@@ -194,13 +190,13 @@ class MyPlayerBrain(object):
                 self.powerUpHand.append(card)
                 playerPowerSend(self, "DRAW", card)
             return
-        
+
         # can we play one?
         okToPlayHand = filter(lambda p: p.okToPlay, self.powerUpHand)
         if len(okToPlayHand) == 0:
             return
         powerUp = okToPlayHand[0]
-        
+
         # 10% discard, 90% play
         if rand.randint(1, 10) == 1:
             playerPowerSend(self, "DISCARD", powerUp)
@@ -216,16 +212,16 @@ class MyPlayerBrain(object):
             playerPowerSend(self, "PLAY", powerUp)
             print "Playing powerup " + powerUp.card
         self.powerUpHand.remove(powerUp)
-        
+
         return
-    
+
     # A power-up was played. It may be an error message, or success.
     def powerUpStatus(self, status, playerPowerUp, cardPlayed):
         # redo the path if we got relocated
         if((status == "POWER_UP_PLAYED") and ((cardPlayed.card == "RELOCATE_ALL_CARS") or ((cardPlayed.card == "CHANGE_DESTINATION") and (cardPlayed.player.guid == self.me.guid)))):
             self.gameStatus("NO_PATH", self.me)
         return
-    
+
     def displayStatus(self, status, plyrStatus):
         msg = ""
         # Sometimes, myPassenger or myPassenger.lobby is None. If you want to figure this
@@ -252,15 +248,7 @@ class MyPlayerBrain(object):
             msg = "{0} delivered at {1}, new passenger refused to board limo, no coffee".format(self.myPassenger.name, self.myPassenger.lobby.name)
         elif(status == "COFFEE_STORE_CAR_RESTOCKED"):
             msg = "Coffee restocked!"
-        
+
         if(msg != ""):
             print (msg)
         return
-    
-    def allPickups (self, me, passengers):
-            pickup = [p for p in passengers if (not p in me.passengersDelivered and
-                                                p != me.limo.passenger and
-                                                p.car is None and
-                                                p.lobby is not None and p.destination is not None)]
-            rand.shuffle(pickup)
-            return pickup
