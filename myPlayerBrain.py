@@ -66,7 +66,7 @@ class MyPlayerBrain(object):
         self.status = dict() # Set of status flags
 
         # self.pickup = pickup = dest.allPickups(me, passengers)
-        target = dest.getBestStrategy(self, passengers)
+        target = dest.getBestStrategy(self)
 
         # get the path from where we are to the dest.
 
